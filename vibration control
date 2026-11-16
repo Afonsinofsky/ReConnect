@@ -1,0 +1,62 @@
+// Definição dos pinos do ESP32
+const int pinoBotao = 26;
+const int pinoMotor = 25;
+
+// Configurações de tempo (em milissegundos)
+const unsigned long duracaoVibracao = 10000UL; // 10 segundos
+const unsigned long atrasoDebounce = 50UL;     // 50 ms para filtrar ruído do botão
+
+// Variáveis de estado do motor
+bool aVibrar = false;
+unsigned long tempoInicioVibracao = 0;
+
+// Variáveis de estado do botão (debounce não-bloqueante)
+int estadoBotaoEstavel = HIGH;
+int ultimoEstadoBotao = HIGH;
+unsigned long ultimoDebounce = 0;
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(pinoBotao, INPUT_PULLUP);
+  pinMode(pinoMotor, OUTPUT);
+  digitalWrite(pinoMotor, LOW);
+}
+
+void loop() {
+  unsigned long agora = millis();
+
+  // 1. Leitura do botão com debounce não-bloqueante
+  int leituraAtual = digitalRead(pinoBotao);
+
+  if (leituraAtual != ultimoEstadoBotao) {
+    ultimoDebounce = agora;
+  }
+
+  if ((agora - ultimoDebounce) >= atrasoDebounce) {
+    if (leituraAtual != estadoBotaoEstavel) {
+      estadoBotaoEstavel = leituraAtual;
+
+      // Aciona apenas no instante em que o botão é pressionado (LOW)
+      if (estadoBotaoEstavel == LOW) {
+        aVibrar = true;
+        tempoInicioVibracao = agora;
+        digitalWrite(pinoMotor, HIGH);
+        Serial.println("Botão clicado! A vibrar por 10 segundos...");
+      }
+    }
+  }
+  ultimoEstadoBotao = leituraAtual;
+
+  // 2. Controlo do tempo de vibração
+  if (aVibrar && (agora - tempoInicioVibracao >= duracaoVibracao)) {
+    aVibrar = false;
+    digitalWrite(pinoMotor, LOW);
+    Serial.println("Vibração terminada.");
+  }
+
+  // 3. Espaço livre para o resto do código (executa centenas de vezes por segundo)
+  // - Atualizar horas no display (Atividade 2)
+  // - Verificar mensagens recebidas por Wi-Fi (Atividade 4)
+  // - Animar efeitos visuais enquanto 'aVibrar == true' (Atividade 5)
+}
